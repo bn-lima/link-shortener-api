@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework import permissions
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, LoginSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from .auth_services import logout_user
@@ -25,3 +25,17 @@ class Logout(APIView):
         logout_user(user)
 
         return Response({'detail': 'Logout successful'}, status=status.HTTP_204_NO_CONTENT)
+    
+class Login(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = LoginSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        token = serializer.save()
+
+        if not token:
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"auth_token": token.key})
