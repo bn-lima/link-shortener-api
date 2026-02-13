@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework import permissions
-from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordRequestSerializer, ChangePasswordSerializer
+from .serializers import RegisterSerializer, LoginSerializer, ChangePasswordRequestSerializer, ChangePasswordSerializer, ForgotPasswordSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from .auth_services import logout_user, get_and_validate_reset_token
@@ -56,7 +56,6 @@ class ChangePassword(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
-        user = request.user
 
         str_token = request.query_params.get("reset_token")
 
@@ -68,9 +67,21 @@ class ChangePassword(APIView):
         if not token:
             return Response({"detail": "Invalid or inactive reset token"}, status=status.HTTP_400_BAD_REQUEST)
         
+        user = token.user
+        
         serializer = ChangePasswordSerializer(data=request.data, context={'user':user})
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response({"detail": "Your password has been changed successfully."})
         
+class ForgotPasswordRequest(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({"detail": "An email with a reset token has been sent to you."}, status=status.HTTP_200_OK)

@@ -60,15 +60,15 @@ class ChangePasswordRequestSerializer(serializers.Serializer):
         user = self.context.get('user')
 
         if has_many_reset_tokens(user):
-            raise serializers.ValidationError({"detail": "You have too many active reset tokens. Reset your password by clicking the link sent to your email, or please wait one hour."})
+            raise serializers.ValidationError("You have too many active reset tokens. Reset your password by clicking the link sent to your email, or please wait one hour.")
         
         return data
     
     def save(self, **kwargs):
         user = self.context.get('user')
 
-        token = ResetToken.objects.create(user=user)    
-        send_reset_token_by_email(user.email, token.key)
+        reset_token = ResetToken.objects.create(user=user)    
+        send_reset_token_by_email(user.email, reset_token.key)
 
 class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(max_length=128, required=True)
@@ -80,7 +80,7 @@ class ChangePasswordSerializer(serializers.Serializer):
         confirm_password = data["confirm_password"]
 
         if user.check_password(new_password):
-            raise serializers.ValidationError({"detail": "The new password cannot be the same as your current password."})
+            raise serializers.ValidationError("The new password cannot be the same as your current password.")
         
         if new_password != confirm_password:
             raise serializers.ValidationError("The passwords do not match")
@@ -96,3 +96,28 @@ class ChangePasswordSerializer(serializers.Serializer):
 
         desactive_reset_tokens(user)
         logout_user(user)
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254, required=True)
+
+    def validate(self, data):
+        email = data['email']
+
+        try:
+            user = Account.objects.get(email=email)
+        except Account.DoesNotExist:
+            raise serializers.ValidationError( "Invalid email or user does not exist")
+        
+        if has_many_reset_tokens(user):
+            raise serializers.ValidationError("You have too many active reset tokens. Reset your password by clicking the link sent to your email, or please wait one hour.  ")
+        
+        data['user'] = user
+
+        return data
+
+    def save(self, **kwargs):
+        user = self.validated_data['user']
+
+        reset_token = ResetToken.objects.create(user=user)
+
+        send_reset_token_by_email(user.email, reset_token.key)
