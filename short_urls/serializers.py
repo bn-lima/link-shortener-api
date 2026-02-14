@@ -16,3 +16,19 @@ class UrlShortenerSerializer(serializers.ModelSerializer):
         )
 
         return shorturl_obj
+    
+class RedirectToOriginalUrlSerialzer(serializers.Serializer):
+    
+    def validate(self, data):
+        link_id = self.context.get("link_id")
+
+        try:
+            short_obj = ShortUrls.objects.get(id_token=link_id)
+        except ShortUrls.DoesNotExist:
+            raise serializers.ValidationError("Invalid link id")
+
+        data['short_obj'] = short_obj
+        return data
+    
+    def save(self, **kwargs):
+        return self.validated_data.get("short_obj")

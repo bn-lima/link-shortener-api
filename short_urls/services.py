@@ -1,9 +1,7 @@
 import uuid
 
-def get_url_domain(url):
-    start = str(url).split('/')[0]
-    end = str(url).split('/')[2]
-    return start + '//' + end + '/'
-
 def create_formated_uuid():
     return str(uuid.uuid4()).split('-')[0]
+
+def get_short_url(id_token):
+    return f"127.0.0.1:8000/short/{id_token}/"
